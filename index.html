@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Memory Game</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+    <style>
+        .game-container {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .score-board {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        .player-score {
+            padding: 10px 20px;
+            border-radius: 5px;
+        }
+        .active-player {
+            background-color: #e3f2fd;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .card {
+            aspect-ratio: 2/3;
+            background-color: #2196f3;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-radius: 8px;
+            border: none;
+        }
+        .card.flipped {
+            background-color: white;
+            color: #000;
+            border: 2px solid #2196f3;
+        }
+        .button {
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .button:hover {
+            background-color: #1976d2;
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script>
+        const { useState, useEffect } = React;
+
+        function MemoryGame() {
+            const cardTypes = ['A', 'A', 'A', 'A', 'K', 'K', 'K', 'K', 'Q', 'Q', 'Q', 'Q', 'J', 'J', 'J', 'J'];
+            const [cards, setCards] = useState([]);
+            const [flippedIndices, setFlippedIndices] = useState([]);
+            const [scores, setScores] = useState({ player1: 0, player2: 0 });
+            const [currentPlayer, setCurrentPlayer] = useState(1);
+            const [gameCompleted, setGameCompleted] = useState(false);
+            const [matchedPairs, setMatchedPairs] = useState([]);
+
+            useEffect(() => {
+                initializeGame();
+            }, []);
+
+            const initializeGame = () => {
+                const shuffledCards = [...cardTypes].sort(() => Math.random() - 0.5);
+                setCards(shuffledCards);
+                setFlippedIndices([]);
+                setScores({ player1: 0, player2: 0 });
+                setCurrentPlayer(1);
+                setGameCompleted(false);
+                setMatchedPairs([]);
+            };
+
+            const handleCardClick = (index) => {
+                if (flippedIndices.includes(index) || matchedPairs.includes(index)) {
+                    return;
+                }
+
+                if (flippedIndices.length === 2) {
+                    return;
+                }
+
+                const newFlippedIndices = [...flippedIndices, index];
+                setFlippedIndices(newFlippedIndices);
+
+                if (newFlippedIndices.length === 2) {
+                    const [firstIndex, secondIndex] = newFlippedIndices;
+                    
+                    if (cards[firstIndex] === cards[secondIndex]) {
+                        setTimeout(() => {
+                            setMatchedPairs([...matchedPairs, firstIndex, secondIndex]);
+                            setScores(prev => ({
+                                ...prev,
+                                [`player${currentPlayer}`]: prev[`player${currentPlayer}`] + 1
+                            }));
+                            setFlippedIndices([]);
+
+                            if (matchedPairs.length + 2 === cards.length) {
+                                setGameCompleted(true);
+                            }
+                        }, 1000);
+                    } else {
+                        setTimeout(() => {
+                            setFlippedIndices([]);
+                            setCurrentPlayer(currentPlayer === 1 ? 2 : 1);
+                        }, 1000);
+                    }
+                }
+            };
+
+            return React.createElement('div', { className: 'game-container' },
+                React.createElement('div', { className: 'header' },
+                    React.createElement('h1', null, 'Memory Game'),
+                    React.createElement('div', { className: 'score-board' },
+                        React.createElement('div', { 
+                            className: `player-score ${currentPlayer === 1 ? 'active-player' : ''}` 
+                        }, `Player 1: ${scores.player1}`),
+                        React.createElement('div', { 
+                            className: `player-score ${currentPlayer === 2 ? 'active-player' : ''}` 
+                        }, `Player 2: ${scores.player2}`)
+                    ),
+                    React.createElement('div', null, `Current Player: ${currentPlayer}`)
+                ),
+                React.createElement('div', { className: 'grid' },
+                    cards.map((card, index) => 
+                        React.createElement('button', {
+                            key: index,
+                            className: `card ${(flippedIndices.includes(index) || matchedPairs.includes(index)) ? 'flipped' : ''}`,
+                            onClick: () => handleCardClick(index)
+                        }, (flippedIndices.includes(index) || matchedPairs.includes(index)) ? card : '?')
+                    )
+                ),
+                gameCompleted && React.createElement('div', { className: 'header' },
+                    React.createElement('h2', null, 
+                        `Game Over! ${scores.player1 === scores.player2 
+                            ? "It's a tie!" 
+                            : `Player ${scores.player1 > scores.player2 ? '1' : '2'} wins!`}`
+                    ),
+                    React.createElement('button', {
+                        className: 'button',
+                        onClick: initializeGame
+                    }, 'Play Again')
+                )
+            );
+        }
+
+        ReactDOM.render(
+            React.createElement(MemoryGame),
+            document.getElementById('root')
+        );
+    </script>
+</body>
+</html>
